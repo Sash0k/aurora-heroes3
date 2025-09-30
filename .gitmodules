@@ -10,3 +10,7 @@
 	path = launcher/lib/innoextract
 	url = https://github.com/vcmi/innoextract.git
 	branch = vcmi
+[submodule "AI/oneTBB"]
+	path = AI/oneTBB
+	url = https://github.com/uxlfoundation/oneTBB
+	branch = onetbb_2022
