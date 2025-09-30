@@ -36,6 +36,15 @@ if(NOT fuzzylite_FOUND)
 endif()
 
 #######################################
+#        oneTBB support               #
+#######################################
+
+if(AURORAOS)
+	add_subdirectory(oneTBB EXCLUDE_FROM_ALL)
+	add_library(TBB::tbb ALIAS staticTarget)
+endif()
+
+#######################################
 #        Add subdirectories           #
 #######################################
 
