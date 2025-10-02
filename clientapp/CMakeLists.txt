@@ -123,7 +123,7 @@ else()
 endif()
 
 #install icons and desktop file on Linux
-if(NOT WIN32 AND NOT APPLE AND NOT ANDROID)
+if(NOT WIN32 AND NOT APPLE AND NOT ANDROID AND NOT AURORAOS)
 	foreach(iconSize 16 22 32 48 64 128 256 512 1024 2048)
 		install(FILES "icons/vcmiclient.${iconSize}x${iconSize}.png"
 			DESTINATION "share/icons/hicolor/${iconSize}x${iconSize}/apps"
@@ -138,4 +138,11 @@ if(NOT WIN32 AND NOT APPLE AND NOT ANDROID)
 	install(FILES icons/vcmiclient.desktop
 		DESTINATION share/applications
 	)
+
+elseif(AURORAOS)
+	install(FILES "${CMAKE_SOURCE_DIR}/clientapp/icons/vcmiclient.86x86.png"     DESTINATION share/icons/hicolor/86x86/apps RENAME ${AURORAOS_APPNAME}.png)
+	install(FILES "${CMAKE_SOURCE_DIR}/clientapp/icons/vcmiclient.108x108.png"   DESTINATION share/icons/hicolor/108x108/apps RENAME ${AURORAOS_APPNAME}.png)
+	install(FILES "${CMAKE_SOURCE_DIR}/clientapp/icons/vcmiclient.128x128.png"   DESTINATION share/icons/hicolor/128x128/apps RENAME ${AURORAOS_APPNAME}.png)
+	install(FILES "${CMAKE_SOURCE_DIR}/clientapp/icons/vcmiclient.172x172.png"   DESTINATION share/icons/hicolor/172x172/apps RENAME ${AURORAOS_APPNAME}.png)
+	install(FILES "${CMAKE_SOURCE_DIR}/clientapp/icons/aurora-vcmi.desktop"      DESTINATION share/applications RENAME ${AURORAOS_APPNAME}.desktop)
 endif()
