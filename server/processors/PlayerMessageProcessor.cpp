@@ -680,10 +680,11 @@ void PlayerMessageProcessor::cheatMaxMorale(PlayerColor player, const CGHeroInst
 	gameHandler->giveHeroBonus(&gb);
 }
 
-bool PlayerMessageProcessor::handleCheatCode(const std::string & cheat, PlayerColor player, ObjectInstanceID currObj)
+bool PlayerMessageProcessor::handleCheatCode(const std::string & cheatFullCommand, PlayerColor player, ObjectInstanceID currObj)
 {
+	std::string cheat = boost::trim_copy(cheatFullCommand);
 	std::vector<std::string> words;
-	boost::split(words, boost::trim_copy(cheat), boost::is_any_of("\t\r\n "));
+	boost::split(words, cheat, boost::is_any_of("\t\r\n "));
 
 	if (words.empty() || !gameHandler->getStartInfo()->extraOptionsInfo.cheatsAllowed)
 		return false;

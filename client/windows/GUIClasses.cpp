@@ -1421,8 +1421,9 @@ CThievesGuildWindow::CThievesGuildWindow(const CGObjectInstance * _owner):
 			// - r-click on hero
 			if(iter.second.details)
 			{
+				std::string allTexts = CGI->generaltexth->allTexts[184];
 				std::vector<std::string> lines;
-				boost::split(lines, CGI->generaltexth->allTexts[184], boost::is_any_of("\n"));
+				boost::split(lines, allTexts, boost::is_any_of("\n"));
 				for(int i=0; i<GameConstants::PRIMARY_SKILLS; ++i)
 				{
 					primSkillHeaders.push_back(std::make_shared<CLabel>(260 + 66 * counter, 407 + 11 * i, FONT_TINY, ETextAlignment::BOTTOMLEFT, Colors::WHITE, lines[i]));
