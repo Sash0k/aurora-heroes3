@@ -40,8 +40,10 @@ endif()
 #######################################
 
 if(AURORAOS)
-	add_subdirectory(oneTBB EXCLUDE_FROM_ALL)
-	add_library(TBB::tbb ALIAS staticTarget)
+    set(BUILD_SHARED_LIBS OFF)
+	set(TBB_TEST OFF)
+	add_subdirectory(oneTBB)
+	#add_library(TBB::tbb ALIAS staticTarget)
 endif()
 
 #######################################
