@@ -289,6 +289,10 @@ if(APPLE_MACOS)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-allocation")
 endif()
 
+if(AURORAOS)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVCMI_AURORAOS")
+endif()
+
 if(MINGW OR MSVC)
 	# Windows Vista or newer for FuzzyLite 6 to compile
 	# Except for conan which already has this definition in its preset
