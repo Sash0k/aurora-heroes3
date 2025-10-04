@@ -1,3 +1,5 @@
+set(VCMICLIENT_NAME vcmiclient)
+
 set(clientapp_SRCS
 		StdInc.cpp
 		EntryPoint.cpp
@@ -21,56 +23,60 @@ if(APPLE_IOS)
 	)
 endif()
 
+if(AURORAOS)
+	set(VCMICLIENT_NAME ${AURORAOS_APPNAME})
+endif()
+
 assign_source_group(${clientapp_SRCS} ${clientapp_HEADERS})
 
 if(ANDROID)
-	add_library(vcmiclient SHARED ${clientapp_SRCS} ${clientapp_HEADERS})
-	set_target_properties(vcmiclient PROPERTIES
+	add_library(${VCMICLIENT_NAME} SHARED ${clientapp_SRCS} ${clientapp_HEADERS})
+	set_target_properties(${VCMICLIENT_NAME} PROPERTIES
 		OUTPUT_NAME "vcmiclient_${ANDROID_ABI}" # required by Qt
 	)
 else()
-	add_executable(vcmiclient ${clientapp_SRCS} ${clientapp_HEADERS})
+	add_executable(${VCMICLIENT_NAME} ${clientapp_SRCS} ${clientapp_HEADERS})
 endif()
 
-target_link_libraries(vcmiclient PRIVATE vcmiclientcommon)
+target_link_libraries(${VCMICLIENT_NAME} PRIVATE vcmiclientcommon)
 
 if(ENABLE_SINGLE_APP_BUILD AND ENABLE_LAUNCHER)
-	target_link_libraries(vcmiclient PRIVATE vcmilauncher)
+	target_link_libraries(${VCMICLIENT_NAME} PRIVATE vcmilauncher)
 endif()
 
-target_include_directories(vcmiclient
+target_include_directories(${VCMICLIENT_NAME}
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 if(ENABLE_VIDEO)
-	target_compile_definitions(vcmiclient PRIVATE ENABLE_VIDEO)
+	target_compile_definitions(${VCMICLIENT_NAME} PRIVATE ENABLE_VIDEO)
 endif()
 
 
 if(WIN32)
-	target_sources(vcmiclient PRIVATE "VCMI_client.rc")
-	set_target_properties(vcmiclient
+	target_sources(${VCMICLIENT_NAME} PRIVATE "VCMI_client.rc")
+	set_target_properties(${VCMICLIENT_NAME}
 		PROPERTIES
 			OUTPUT_NAME "VCMI_client"
 			PROJECT_LABEL "VCMI_client"
 	)
-	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vcmiclient)
+	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${VCMICLIENT_NAME})
 	if(NOT ENABLE_DEBUG_CONSOLE)
-		set_target_properties(vcmiclient PROPERTIES WIN32_EXECUTABLE)
-		target_link_libraries(vcmiclient SDL2::SDL2main)
+		set_target_properties(${VCMICLIENT_NAME} PROPERTIES WIN32_EXECUTABLE)
+		target_link_libraries(${VCMICLIENT_NAME} SDL2::SDL2main)
 	endif()
-	target_compile_definitions(vcmiclient PRIVATE WINDOWS_IGNORE_PACKING_MISMATCH)
+	target_compile_definitions(${VCMICLIENT_NAME} PRIVATE WINDOWS_IGNORE_PACKING_MISMATCH)
 
 	# TODO: very hacky, find proper solution to copy AI dlls into bin dir
 	if(MSVC)
-		add_custom_command(TARGET vcmiclient POST_BUILD
-			WORKING_DIRECTORY "$<TARGET_FILE_DIR:vcmiclient>"
+		add_custom_command(TARGET ${VCMICLIENT_NAME} POST_BUILD
+			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${VCMICLIENT_NAME}>"
 			COMMAND ${CMAKE_COMMAND} -E copy AI/fuzzylite.dll fuzzylite.dll
 			COMMAND ${CMAKE_COMMAND} -E copy AI/tbb12.dll tbb12.dll
 		)
 	endif()
 elseif(APPLE_IOS)
-	set_target_properties(vcmiclient PROPERTIES
+	set_target_properties(${VCMICLIENT_NAME} PROPERTIES
 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/ios/Info.plist"
 		XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
 		XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "$(CODE_SIGNING_ALLOWED_FOR_APPS)"
@@ -79,7 +85,7 @@ elseif(APPLE_IOS)
 
 	foreach(XCODE_RESOURCE LaunchScreen.storyboard Images.xcassets Settings.bundle vcmi_logo.png)
 		set(XCODE_RESOURCE_PATH ios/${XCODE_RESOURCE})
-		target_sources(vcmiclient PRIVATE ${XCODE_RESOURCE_PATH})
+		target_sources(${VCMICLIENT_NAME} PRIVATE ${XCODE_RESOURCE_PATH})
 		set_source_files_properties(${XCODE_RESOURCE_PATH} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
 		# workaround to prevent CMAKE_SKIP_PRECOMPILE_HEADERS being added as compile flag
@@ -91,19 +97,19 @@ elseif(APPLE_IOS)
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-e,_client_main")
 endif()
 
-vcmi_set_output_dir(vcmiclient "")
-enable_pch(vcmiclient)
+vcmi_set_output_dir(${VCMICLIENT_NAME} "")
+enable_pch(${VCMICLIENT_NAME})
 
 if(APPLE_IOS)
 	vcmi_install_conan_deps("\${CMAKE_INSTALL_PREFIX}")
-	add_custom_command(TARGET vcmiclient POST_BUILD
-		COMMAND ios/set_build_version.sh "$<TARGET_BUNDLE_CONTENT_DIR:vcmiclient>"
-		COMMAND ${CMAKE_COMMAND} --install "${CMAKE_BINARY_DIR}" --component "${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME}" --config "$<CONFIG>" --prefix "$<TARGET_BUNDLE_CONTENT_DIR:vcmiclient>"
+	add_custom_command(TARGET ${VCMICLIENT_NAME} POST_BUILD
+		COMMAND ios/set_build_version.sh "$<TARGET_BUNDLE_CONTENT_DIR:${VCMICLIENT_NAME}>"
+		COMMAND ${CMAKE_COMMAND} --install "${CMAKE_BINARY_DIR}" --component "${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME}" --config "$<CONFIG>" --prefix "$<TARGET_BUNDLE_CONTENT_DIR:${VCMICLIENT_NAME}>"
 		COMMAND ios/rpath_remove_symlinks.sh
 		COMMAND ios/codesign.sh
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
-	install(TARGETS vcmiclient DESTINATION Payload COMPONENT app) # for ipa generation with cpack
+	install(TARGETS ${VCMICLIENT_NAME} DESTINATION Payload COMPONENT app) # for ipa generation with cpack
 elseif(ANDROID)
 	find_program(androidDeployQt androiddeployqt
 		PATHS "${qtBinDir}"
@@ -117,9 +123,9 @@ elseif(ANDROID)
 		VERBATIM
 		COMMENT "Create android package"
 	)
-	add_dependencies(android_deploy vcmiclient)
+	add_dependencies(android_deploy ${VCMICLIENT_NAME})
 else()
-	install(TARGETS vcmiclient DESTINATION ${BIN_DIR})
+	install(TARGETS ${VCMICLIENT_NAME} DESTINATION ${BIN_DIR})
 endif()
 
 #install icons and desktop file on Linux
@@ -127,13 +133,13 @@ if(NOT WIN32 AND NOT APPLE AND NOT ANDROID AND NOT AURORAOS)
 	foreach(iconSize 16 22 32 48 64 128 256 512 1024 2048)
 		install(FILES "icons/vcmiclient.${iconSize}x${iconSize}.png"
 			DESTINATION "share/icons/hicolor/${iconSize}x${iconSize}/apps"
-			RENAME vcmiclient.png
+			RENAME ${VCMICLIENT_NAME}.png
 		)
 	endforeach()
 
 	install(FILES icons/vcmiclient.svg
 		DESTINATION share/icons/hicolor/scalable/apps
-		RENAME vcmiclient.svg
+		RENAME ${VCMICLIENT_NAME}.svg
 	)
 	install(FILES icons/vcmiclient.desktop
 		DESTINATION share/applications
