@@ -52,7 +52,6 @@ BuildRequires:		boost-system >= 1.51
 BuildRequires:		boost-thread >= 1.51
 BuildRequires:		boost-program-options >= 1.51
 BuildRequires:		boost-locale >= 1.51
-BuildRequires:		minizip-devel
 BuildRequires:		zlib-devel
 BuildRequires:		rsync
 
