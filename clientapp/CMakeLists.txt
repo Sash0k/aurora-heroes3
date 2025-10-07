@@ -25,7 +25,6 @@ endif()
 
 if(AURORAOS)
 	set(VCMICLIENT_NAME ${AURORAOS_APPNAME})
-	set(CMAKE_INSTALL_RPATH ${LIB_DIR}) # validator
 endif()
 
 assign_source_group(${clientapp_SRCS} ${clientapp_HEADERS})
