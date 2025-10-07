@@ -580,6 +580,82 @@ void VCMIDirsAndroid::init()
 	IVCMIDirsUNIX::init();
 }
 
+#elif defined(VCMI_AURORAOS)
+class VCMIDirsAurora : public IVCMIDirsUNIX
+{
+public:
+	bfs::path userDataPath() const override;
+	bfs::path userCachePath() const override;
+	bfs::path userConfigPath() const override;
+
+	std::vector<bfs::path> dataPaths() const override;
+
+	bfs::path libraryPath() const override;
+	bfs::path binaryPath() const override;
+
+	std::string libraryName(const std::string& basename) const override;
+};
+
+bfs::path VCMIDirsAurora::userDataPath() const
+{
+	// default: $HOME/.local/share
+	const char* homeDir;
+	if((homeDir = getenv("HOME")))
+		return bfs::path(homeDir) / ".local" / "share" / "ru.sashikknox" / "hmm3";
+	else
+		return ".";
+}
+bfs::path VCMIDirsAurora::userCachePath() const
+{
+	// default: $HOME/.cache
+	const char * tempResult;
+	if ((tempResult = getenv("HOME")))
+		return bfs::path(tempResult) / ".cache" / "ru.sashikknox" / "hmm3";
+	else
+		return ".";
+}
+bfs::path VCMIDirsAurora::userConfigPath() const
+{
+	// default: $HOME/.config
+	const char * tempResult;
+	if ((tempResult = getenv("HOME")))
+		return bfs::path(tempResult) / ".config" / "ru.sashikknox" / "hmm3";
+	else
+		return bfs::path(".");
+}
+
+std::vector<bfs::path> VCMIDirsAurora::dataPaths() const
+{
+	// default: /usr/share/
+
+	// construct list in reverse.
+	// in specification first directory has highest priority
+	// in vcmi fs last directory has highest priority
+	std::vector<bfs::path> ret;
+	ret.push_back(bfs::path("/usr/share") / "ru.sashikknox.hmm3");
+	return ret;
+}
+
+bfs::path VCMIDirsAurora::libraryPath() const
+{
+	if(developmentMode())
+		return ".";
+
+	else
+		return M_LIB_DIR;
+}
+
+bfs::path VCMIDirsAurora::binaryPath() const
+{
+	if(developmentMode())
+		return ".";
+
+	else
+		return M_BIN_DIR;
+}
+
+std::string VCMIDirsAurora::libraryName(const std::string& basename) const { return "lib" + basename + ".so"; }
+
 #elif defined(VCMI_PORTMASTER)
 class VCMIDirsPM : public IVCMIDirsUNIX
 {
@@ -784,6 +860,8 @@ namespace VCMIDirs
 			static VCMIDirsWIN32 singleton;
 		#elif defined(VCMI_ANDROID)
 			static VCMIDirsAndroid singleton;
+		#elif defined(VCMI_AURORAOS)
+			static VCMIDirsAurora singleton;
 		#elif defined(VCMI_PORTMASTER)
 			static VCMIDirsPM singleton;
 		#elif defined(VCMI_XDG)
