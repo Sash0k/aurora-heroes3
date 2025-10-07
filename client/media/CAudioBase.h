@@ -9,6 +9,10 @@
  */
 #pragma once
 
+#if defined(VCMI_AURORAOS)
+#include <audioresource/audioresource.h>
+#endif
+
 class CAudioBase : boost::noncopyable
 {
 	static int initializationCounter;
@@ -19,4 +23,11 @@ protected:
 
 	CAudioBase();
 	~CAudioBase();
+
+#ifdef VCMI_AURORAOS
+	audioresource_t *audio_resource;
+public:
+	bool is_audio_resource_acquired = false;
+#endif
 };
+

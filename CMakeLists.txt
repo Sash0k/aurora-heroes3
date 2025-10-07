@@ -545,6 +545,10 @@ if(NOT ENABLE_MINIMAL_LIB AND NOT AURORAOS)
 endif()
 
 if(AURORAOS)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(AUDIORESOURCE REQUIRED audioresource)
+	pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+
 	include_directories(${CMAKE_SOURCE_DIR}/AI/oneTBB/include)
 endif()
 

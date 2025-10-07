@@ -497,5 +497,15 @@ if(VCMI_PORTMASTER)
 	target_compile_definitions(vcmiclientcommon PRIVATE VCMI_PORTMASTER)
 endif()
 
+if(AURORAOS)
+	target_include_directories(vcmiclientcommon PRIVATE
+		${GLIB2_INCLUDE_DIRS}
+		${AUDIORESOURCE_INCLUDE_DIRS}
+	)
+	target_link_libraries(vcmiclientcommon PRIVATE
+		${GLIB2_LIBRARIES}
+		${AUDIORESOURCE_LIBRARIES}
+	)
+endif()
 vcmi_set_output_dir(vcmiclientcommon "")
 enable_pch(vcmiclientcommon)
