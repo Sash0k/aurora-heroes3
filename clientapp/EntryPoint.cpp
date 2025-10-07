@@ -132,7 +132,7 @@ static void prog_help(const po::options_description &opts)
 
 #if defined(VCMI_WINDOWS) && !defined(__GNUC__) && defined(VCMI_WITH_DEBUG_CONSOLE)
 int wmain(int argc, wchar_t* argv[])
-#elif defined(VCMI_MOBILE)
+#elif defined(VCMI_MOBILE) && !defined(VCMI_AURORAOS)
 int SDL_main(int argc, char *argv[])
 #else
 int main(int argc, char * argv[])

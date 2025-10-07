@@ -452,7 +452,7 @@ SDL_Window * ScreenHandler::createWindowImpl(Point dimensions, int flags, bool c
 
 SDL_Window * ScreenHandler::createWindow()
 {
-#ifndef VCMI_MOBILE
+#if !defined(VCMI_MOBILE) || defined(VCMI_AURORAOS)
 	Point dimensions = getPreferredWindowResolution();
 
 	switch(getPreferredWindowMode())
@@ -497,7 +497,7 @@ void ScreenHandler::onScreenResize()
 
 void ScreenHandler::validateSettings()
 {
-#ifndef VCMI_MOBILE
+#if !defined(VCMI_MOBILE) || defined(VCMI_AURORAOS)
 	{
 		int displayIndex = settings["video"]["displayIndex"].Integer();
 		int displaysCount = SDL_GetNumVideoDisplays();
