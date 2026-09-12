@@ -24,6 +24,11 @@
 
 std::unique_ptr<ICursor> CursorHandler::createCursor()
 {
+#ifdef VCMI_AURORAOS
+	// [auroraos] hardware cursor can not be rotated or scaled together with screen content
+	return std::make_unique<CursorSoftware>();
+#endif
+
 #if defined(VCMI_MOBILE) || defined(VCMI_PORTMASTER)
 	if (settings["general"]["userRelativePointer"].Bool())
 		return std::make_unique<CursorSoftware>();

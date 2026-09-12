@@ -46,7 +46,7 @@ class InputHandler
 
 	std::vector<SDL_Event> acquireEvents();
 
-	void preprocessEvent(const SDL_Event & event);
+	void preprocessEvent(SDL_Event & event);
 	void handleCurrentEvent(const SDL_Event & current);
 	void handleUserEvent(const SDL_UserEvent & current);
 

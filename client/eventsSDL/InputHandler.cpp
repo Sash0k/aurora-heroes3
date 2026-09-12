@@ -24,6 +24,7 @@
 #include "../gui/MouseButton.h"
 #include "../media/IMusicPlayer.h"
 #include "../media/ISoundPlayer.h"
+#include "../render/IScreenHandler.h"
 #include "../CMT.h"
 #include "../CPlayerInterface.h"
 #include "../CGameInfo.h"
@@ -189,8 +190,56 @@ bool InputHandler::ignoreEventsUntilInput()
 	return inputFound;
 }
 
-void InputHandler::preprocessEvent(const SDL_Event & ev)
+void InputHandler::preprocessEvent(SDL_Event & ev)
 {
+#ifdef VCMI_AURORAOS
+	if (ev.type == SDL_DISPLAYEVENT && ev.display.event == SDL_DISPLAYEVENT_ORIENTATION)
+	{
+		boost::mutex::scoped_lock interfaceLock(GH.interfaceMutex);
+		GH.screenHandler().setScreenOrientation(ev.display.data1);
+		return;
+	}
+
+	// [auroraos] screen content is rendered rotated on devices with portrait panel, so SDL events
+	// arrive in window coordinates while game expects coordinates on unrotated surface - convert them
+	if (ev.type == SDL_MOUSEMOTION || ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP)
+	{
+		auto & screenHandler = GH.screenHandler();
+
+		if (ev.type == SDL_MOUSEMOTION)
+		{
+			Point surfacePosition = screenHandler.convertWindowToSurface(Point(ev.motion.x, ev.motion.y));
+			Point surfaceDelta = screenHandler.convertWindowDeltaToSurface(Point(ev.motion.xrel, ev.motion.yrel));
+
+			ev.motion.x = surfacePosition.x;
+			ev.motion.y = surfacePosition.y;
+			ev.motion.xrel = surfaceDelta.x;
+			ev.motion.yrel = surfaceDelta.y;
+		}
+		else
+		{
+			Point surfacePosition = screenHandler.convertWindowToSurface(Point(ev.button.x, ev.button.y));
+
+			ev.button.x = surfacePosition.x;
+			ev.button.y = surfacePosition.y;
+		}
+	}
+	else if (ev.type == SDL_FINGERMOTION || ev.type == SDL_FINGERDOWN || ev.type == SDL_FINGERUP)
+	{
+		auto & screenHandler = GH.screenHandler();
+		Point windowDimensions = screenHandler.getWindowDimensions();
+		Point surfaceDimensions = screenHandler.getLogicalResolution() * screenHandler.getScalingFactor();
+
+		Point surfacePosition = screenHandler.convertWindowToSurface(Point(ev.tfinger.x * windowDimensions.x, ev.tfinger.y * windowDimensions.y));
+		Point surfaceDelta = screenHandler.convertWindowDeltaToSurface(Point(ev.tfinger.dx * windowDimensions.x, ev.tfinger.dy * windowDimensions.y));
+
+		ev.tfinger.x = static_cast<float>(surfacePosition.x) / surfaceDimensions.x;
+		ev.tfinger.y = static_cast<float>(surfacePosition.y) / surfaceDimensions.y;
+		ev.tfinger.dx = static_cast<float>(surfaceDelta.x) / surfaceDimensions.x;
+		ev.tfinger.dy = static_cast<float>(surfaceDelta.y) / surfaceDimensions.y;
+	}
+#endif
+
 	if(ev.type == SDL_QUIT)
 	{
 		boost::mutex::scoped_lock interfaceLock(GH.interfaceMutex);

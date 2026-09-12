@@ -14,6 +14,7 @@ struct SDL_Texture;
 struct SDL_Window;
 struct SDL_Renderer;
 struct SDL_Surface;
+struct SDL_FRect;
 
 #include "../../lib/Point.h"
 #include "../render/IScreenHandler.h"
@@ -88,6 +89,20 @@ class ScreenHandler final : public IScreenHandler
 
 	void selectDownscalingFilter();
 	void selectUpscalingFilter();
+
+#ifdef VCMI_AURORAOS
+	/// [auroraos] native (hardware) orientation of device panel
+	bool nativeLandscape = false;
+	/// [auroraos] scaling factor from main surface size to window size
+	float screenCoef = 1.0f;
+	/// [auroraos] current rotation of rendered content, in degrees (0, 90, 180 or 270)
+	double screenRotation = 0.0;
+
+	/// [auroraos] rect in window coordinates where rotated surface content is actually displayed
+	SDL_FRect getOccupiedWindowRect() const;
+	/// [auroraos] rect in window coordinates passed to SDL_RenderCopyExF before rotation is applied
+	SDL_FRect getSurfaceDestRect() const;
+#endif
 public:
 
 	/// Creates and initializes screen, window and SDL state
@@ -118,4 +133,14 @@ public:
 	std::vector<Point> getSupportedResolutions(int displayIndex) const;
 	std::tuple<int, int> getSupportedScalingRange() const final;
 	Rect convertLogicalPointsToWindow(const Rect & input) const final;
+
+#ifdef VCMI_AURORAOS
+	void setScreenOrientation(int orientation) final;
+	void renderScreenTexture() final;
+	Point convertWindowToSurface(const Point & windowPoint) const final;
+	Point convertWindowDeltaToSurface(const Point & windowDelta) const final;
+	Point convertSurfaceToWindow(const Point & surfacePoint) const final;
+	double getScreenRotation() const final;
+	Point getWindowDimensions() const final;
+#endif
 };

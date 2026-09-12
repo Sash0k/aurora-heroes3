@@ -108,7 +108,12 @@ void CGuiHandler::renderFrame()
 	}
 
 	SDL_RenderClear(mainRenderer);
+#ifdef VCMI_AURORAOS
+	// [auroraos] screen texture is rotated and scaled manually, see ScreenHandler::setScreenOrientation
+	screenHandler().renderScreenTexture();
+#else
 	SDL_RenderCopy(mainRenderer, screenTexture, nullptr, nullptr);
+#endif
 
 	{
 		boost::mutex::scoped_lock interfaceLock(GH.interfaceMutex);

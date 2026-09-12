@@ -548,6 +548,7 @@ if(AURORAOS)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(AUDIORESOURCE REQUIRED audioresource)
 	pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+	pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
 
 	include_directories(${CMAKE_SOURCE_DIR}/AI/oneTBB/include)
 endif()

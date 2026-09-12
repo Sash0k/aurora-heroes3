@@ -501,10 +501,12 @@ if(AURORAOS)
 	target_include_directories(vcmiclientcommon PRIVATE
 		${GLIB2_INCLUDE_DIRS}
 		${AUDIORESOURCE_INCLUDE_DIRS}
+		${WAYLAND_CLIENT_INCLUDE_DIRS}
 	)
 	target_link_libraries(vcmiclientcommon PRIVATE
 		${GLIB2_LIBRARIES}
 		${AUDIORESOURCE_LIBRARIES}
+		${WAYLAND_CLIENT_LIBRARIES}
 	)
 endif()
 vcmi_set_output_dir(vcmiclientcommon "")

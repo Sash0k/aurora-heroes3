@@ -28,6 +28,11 @@
 #	include "ios/utils.h"
 #endif
 
+#ifdef VCMI_AURORAOS
+#include <SDL_syswm.h>
+#include <wayland-client-protocol.h>
+#endif
+
 #include <SDL.h>
 
 // TODO: should be made into a private members of ScreenHandler
@@ -144,6 +149,14 @@ Point ScreenHandler::getRenderResolution() const
 	assert(mainRenderer != nullptr);
 
 	Point result;
+#ifdef VCMI_AURORAOS
+	if (!nativeLandscape)
+	{
+		// on portrait devices rendered buffer is rotated by compositor, game surface is always in landscape orientation
+		SDL_GetRendererOutputSize(mainRenderer, &result.y, &result.x);
+		return result;
+	}
+#endif
 	SDL_GetRendererOutputSize(mainRenderer, &result.x, &result.y);
 
 	return result;
@@ -406,8 +419,23 @@ void ScreenHandler::initializeScreenBuffers()
 	int amask = 0xFF000000;
 #endif
 
+#ifdef VCMI_AURORAOS
+	{
+		// detect native orientation of device panel before logical resolution is computed
+		SDL_DisplayMode displayMode{};
+		if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
+		{
+			nativeLandscape = displayMode.w > displayMode.h;
+			logGlobal->info("Native device resolution is %dx%d (%s)", displayMode.w, displayMode.h, nativeLandscape ? "Native Landscape" : "Native Portrait");
+		}
+	}
+#endif
+
 	auto logicalSize = getPreferredLogicalResolution() * getScalingFactor();
+#ifndef VCMI_AURORAOS
+	// [auroraos] SDL logical size scaling conflicts with manual rotation and scaling of screen texture
 	SDL_RenderSetLogicalSize(mainRenderer, logicalSize.x, logicalSize.y);
+#endif
 
 	screen = SDL_CreateRGBSurface(0, logicalSize.x, logicalSize.y, 32, rmask, gmask, bmask, amask);
 	if(nullptr == screen)
@@ -438,6 +466,33 @@ void ScreenHandler::initializeScreenBuffers()
 		screenBuf = screen2;
 	else
 		screenBuf = screen;
+
+#ifdef VCMI_AURORAOS
+	{
+		// compute scaling from main surface size to window size, taking rotation into account
+		SDL_DisplayMode displayMode{};
+		if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
+		{
+			double widthCoef, heightCoef;
+			if (nativeLandscape)
+			{
+				widthCoef = static_cast<double>(displayMode.w) / screen->w;
+				heightCoef = static_cast<double>(displayMode.h) / screen->h;
+			}
+			else
+			{
+				widthCoef = static_cast<double>(displayMode.h) / screen->w;
+				heightCoef = static_cast<double>(displayMode.w) / screen->h;
+			}
+			screenCoef = std::min(widthCoef, heightCoef);
+			logGlobal->info("Screen scale factor: %f", screenCoef);
+		}
+	}
+
+	// first set default orientation according to native panel orientation, then apply real one reported by compositor
+	setScreenOrientation(nativeLandscape ? SDL_ORIENTATION_PORTRAIT : SDL_ORIENTATION_LANDSCAPE);
+	setScreenOrientation(SDL_GetDisplayOrientation(0));
+#endif
 
 	clearScreen();
 }
@@ -677,3 +732,199 @@ bool ScreenHandler::hasFocus()
 	ui32 flags = SDL_GetWindowFlags(mainWindow);
 	return flags & SDL_WINDOW_INPUT_FOCUS;
 }
+
+#ifdef VCMI_AURORAOS
+SDL_FRect ScreenHandler::getSurfaceDestRect() const
+{
+	SDL_FRect result{0.0f, 0.0f, 0.0f, 0.0f};
+
+	if (mainWindow == nullptr || screen == nullptr)
+		return result;
+
+	int windowWidth = 0, windowHeight = 0;
+	SDL_GetWindowSize(mainWindow, &windowWidth, &windowHeight);
+
+	result.w = screen->w * screenCoef;
+	result.h = screen->h * screenCoef;
+	result.x = (windowWidth - result.w) * 0.5f;
+	result.y = (windowHeight - result.h) * 0.5f;
+
+	return result;
+}
+
+SDL_FRect ScreenHandler::getOccupiedWindowRect() const
+{
+	SDL_FRect result{0.0f, 0.0f, 0.0f, 0.0f};
+
+	if (mainWindow == nullptr || screen == nullptr)
+		return result;
+
+	int windowWidth = 0, windowHeight = 0;
+	SDL_GetWindowSize(mainWindow, &windowWidth, &windowHeight);
+
+	float contentWidth = screen->w * screenCoef;
+	float contentHeight = screen->h * screenCoef;
+
+	if (screenRotation == 90.0 || screenRotation == 270.0)
+	{
+		// rotated content occupies rectangle with swapped dimensions
+		std::swap(contentWidth, contentHeight);
+	}
+
+	result.w = contentWidth;
+	result.h = contentHeight;
+	result.x = (windowWidth - contentWidth) * 0.5f;
+	result.y = (windowHeight - contentHeight) * 0.5f;
+
+	return result;
+}
+
+void ScreenHandler::setScreenOrientation(int orientation)
+{
+	if (mainWindow == nullptr || screen == nullptr)
+		return;
+
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+
+	if (SDL_GetWindowWMInfo(mainWindow, &wmInfo) && wmInfo.subsystem == SDL_SYSWM_WAYLAND)
+	{
+		struct wl_surface * waylandSurface = wmInfo.info.wl.surface;
+
+		if (nativeLandscape)
+		{
+			// device panel is natively landscape, game content is rendered unrotated
+			switch (orientation)
+			{
+				case SDL_ORIENTATION_PORTRAIT:
+					screenRotation = 0.0;
+					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_NORMAL);
+					break;
+				case SDL_ORIENTATION_PORTRAIT_FLIPPED:
+					screenRotation = 180.0;
+					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_180);
+					break;
+			}
+		}
+		else
+		{
+			// device panel is natively portrait, landscape game content must be rotated
+			switch (orientation)
+			{
+				case SDL_ORIENTATION_LANDSCAPE:
+					screenRotation = 90.0;
+					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_270);
+					break;
+				case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
+					screenRotation = 270.0;
+					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_90);
+					break;
+			}
+		}
+	}
+
+	logGlobal->info("Set screen orientation %d, content rotation %d degrees", orientation, static_cast<int>(screenRotation));
+}
+
+void ScreenHandler::renderScreenTexture()
+{
+	SDL_FRect destRect = getSurfaceDestRect();
+	SDL_RenderCopyExF(mainRenderer, screenTexture, nullptr, &destRect, screenRotation, nullptr, SDL_FLIP_NONE);
+}
+
+double ScreenHandler::getScreenRotation() const
+{
+	return screenRotation;
+}
+
+Point ScreenHandler::getWindowDimensions() const
+{
+	Point result;
+	SDL_GetWindowSize(mainWindow, &result.x, &result.y);
+	return result;
+}
+
+Point ScreenHandler::convertWindowToSurface(const Point & windowPoint) const
+{
+	if (screen == nullptr)
+		return windowPoint;
+
+	SDL_FRect rect = getOccupiedWindowRect();
+	double windowX = windowPoint.x - rect.x;
+	double windowY = windowPoint.y - rect.y;
+	double surfaceX = 0, surfaceY = 0;
+
+	switch (static_cast<int>(screenRotation))
+	{
+		case 90:
+			surfaceX = windowY / screenCoef;
+			surfaceY = screen->h - windowX / screenCoef;
+			break;
+		case 180:
+			surfaceX = screen->w - windowX / screenCoef;
+			surfaceY = screen->h - windowY / screenCoef;
+			break;
+		case 270:
+			surfaceX = screen->w - windowY / screenCoef;
+			surfaceY = windowX / screenCoef;
+			break;
+		default:
+			surfaceX = windowX / screenCoef;
+			surfaceY = windowY / screenCoef;
+			break;
+	}
+
+	return Point(std::lround(surfaceX), std::lround(surfaceY));
+}
+
+Point ScreenHandler::convertWindowDeltaToSurface(const Point & windowDelta) const
+{
+	double deltaX = windowDelta.x / screenCoef;
+	double deltaY = windowDelta.y / screenCoef;
+
+	switch (static_cast<int>(screenRotation))
+	{
+		case 90:
+			return Point(std::lround(deltaY), std::lround(-deltaX));
+		case 180:
+			return Point(std::lround(-deltaX), std::lround(-deltaY));
+		case 270:
+			return Point(std::lround(-deltaY), std::lround(deltaX));
+		default:
+			return Point(std::lround(deltaX), std::lround(deltaY));
+	}
+}
+
+Point ScreenHandler::convertSurfaceToWindow(const Point & surfacePoint) const
+{
+	if (screen == nullptr)
+		return surfacePoint;
+
+	SDL_FRect rect = getOccupiedWindowRect();
+	double surfaceX = surfacePoint.x;
+	double surfaceY = surfacePoint.y;
+	double windowX = 0, windowY = 0;
+
+	switch (static_cast<int>(screenRotation))
+	{
+		case 90:
+			windowX = rect.x + (screen->h - surfaceY) * screenCoef;
+			windowY = rect.y + surfaceX * screenCoef;
+			break;
+		case 180:
+			windowX = rect.x + (screen->w - surfaceX) * screenCoef;
+			windowY = rect.y + (screen->h - surfaceY) * screenCoef;
+			break;
+		case 270:
+			windowX = rect.x + surfaceY * screenCoef;
+			windowY = rect.y + (screen->w - surfaceX) * screenCoef;
+			break;
+		default:
+			windowX = rect.x + surfaceX * screenCoef;
+			windowY = rect.y + surfaceY * screenCoef;
+			break;
+	}
+
+	return Point(std::lround(windowX), std::lround(windowY));
+}
+#endif

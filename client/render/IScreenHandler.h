@@ -10,8 +10,9 @@
 
 #pragma once
 
+#include "../../lib/Point.h"
+
 VCMI_LIB_NAMESPACE_BEGIN
-class Point;
 class Rect;
 VCMI_LIB_NAMESPACE_END
 
@@ -50,4 +51,28 @@ public:
 
 	/// Window has focus
 	virtual bool hasFocus() = 0;
+
+#ifdef VCMI_AURORAOS
+	/// [auroraos] Applies new display orientation: sets wayland buffer transform and
+	/// updates internal rotation state used for rendering and input coordinates conversion
+	virtual void setScreenOrientation(int orientation) = 0;
+
+	/// [auroraos] Renders main screen texture onto renderer applying software rotation and scaling
+	virtual void renderScreenTexture() = 0;
+
+	/// [auroraos] Converts point in window (buffer) coordinates into point on main surface
+	virtual Point convertWindowToSurface(const Point & windowPoint) const = 0;
+
+	/// [auroraos] Converts offset in window coordinates into offset on main surface (rotation and scaling, no offset)
+	virtual Point convertWindowDeltaToSurface(const Point & windowDelta) const = 0;
+
+	/// [auroraos] Converts point on main surface into window coordinates, e.g. for software cursor rendering
+	virtual Point convertSurfaceToWindow(const Point & surfacePoint) const = 0;
+
+	/// [auroraos] Current rotation angle of screen content in degrees (0, 90, 180 or 270)
+	virtual double getScreenRotation() const = 0;
+
+	/// [auroraos] Dimensions of game window (buffer) in pixels
+	virtual Point getWindowDimensions() const = 0;
+#endif
 };

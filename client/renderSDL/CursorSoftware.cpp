@@ -35,7 +35,21 @@ void CursorSoftware::render()
 	destRect.w = cursorSurface->w;
 	destRect.h = cursorSurface->h;
 
+#ifdef VCMI_AURORAOS
+	// [auroraos] cursor is rendered on renderer in window coordinates, rotate and scale it same way as screen texture
+	auto & screenHandler = GH.screenHandler();
+	Point topLeft = screenHandler.convertSurfaceToWindow(renderPos);
+	Point bottomRight = screenHandler.convertSurfaceToWindow(renderPos + Point(destRect.w, destRect.h));
+
+	destRect.x = std::min(topLeft.x, bottomRight.x);
+	destRect.y = std::min(topLeft.y, bottomRight.y);
+	destRect.w = std::abs(topLeft.x - bottomRight.x);
+	destRect.h = std::abs(topLeft.y - bottomRight.y);
+
+	SDL_RenderCopyEx(mainRenderer, cursorTexture, nullptr, &destRect, screenHandler.getScreenRotation(), nullptr, SDL_FLIP_NONE);
+#else
 	SDL_RenderCopy(mainRenderer, cursorTexture, nullptr, &destRect);
+#endif
 }
 
 void CursorSoftware::createTexture(const Point & dimensions)

@@ -328,8 +328,17 @@ void InputSourceTouch::emitPinchEvent(const SDL_TouchFingerEvent & tfinger)
 
 		if (finger && finger->id != tfinger.fingerId)
 		{
+#ifdef VCMI_AURORAOS
+			// [auroraos] raw finger positions are in window coordinates, convert to logical
+			Point windowDimensions = GH.screenHandler().getWindowDimensions();
+			Point otherPosition = GH.screenHandler().convertWindowToSurface(Point(finger->x * windowDimensions.x, finger->y * windowDimensions.y));
+			double logicalScale = 1.0 / GH.screenHandler().getScalingFactor();
+			otherX = otherPosition.x * logicalScale;
+			otherY = otherPosition.y * logicalScale;
+#else
 			otherX = finger->x * GH.screenDimensions().x;
 			otherY = finger->y * GH.screenDimensions().y;
+#endif
 			otherFingerFound = true;
 			break;
 		}
