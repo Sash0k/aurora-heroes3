@@ -15,7 +15,7 @@ Name:				ru.sashikknox.hmm3
 
 Summary:			VCMI is an open-source project aiming to reimplement HoMM3 game engine, giving it new and extended possibilities.
 Version:			1.6.8
-Release:			1
+Release:			2
 License:			GPLv2+
 Group:				Amusements/Games
 
