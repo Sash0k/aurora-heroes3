@@ -490,7 +490,7 @@ void ScreenHandler::initializeScreenBuffers()
 	}
 
 	// first set default orientation according to native panel orientation, then apply real one reported by compositor
-	setScreenOrientation(nativeLandscape ? SDL_ORIENTATION_PORTRAIT : SDL_ORIENTATION_LANDSCAPE);
+	setScreenOrientation(SDL_ORIENTATION_LANDSCAPE_FLIPPED);
 	setScreenOrientation(SDL_GetDisplayOrientation(0));
 #endif
 
@@ -812,13 +812,14 @@ void ScreenHandler::setScreenOrientation(int orientation)
 			switch (orientation)
 			{
 				case SDL_ORIENTATION_LANDSCAPE:
-					screenRotation = 90.0;
-					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_270);
-					break;
-				case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
 					screenRotation = 270.0;
 					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_90);
 					break;
+				case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
+					screenRotation = 90.0;
+					wl_surface_set_buffer_transform(waylandSurface, WL_OUTPUT_TRANSFORM_270);
+					break;
+
 			}
 		}
 	}
